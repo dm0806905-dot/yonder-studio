@@ -21,6 +21,64 @@ const storage = multer.diskStorage({ destination: (_, __, cb) => cb(null, UPLOAD
 const upload = multer({ storage, limits: { fileSize: 1024 * 1024 * 1024 } });
 const jobs = new Map();
 const clips = [];
+// OAuth oficial de YouTube: permite consultar el canal y sus videos, no descargar sus archivos MP4.
+const youtubeStates = new Map();
+let youtubeTokens = null;
+let youtubeChannel = null;
+app.set('trust proxy', 1);
+function youtubeRedirectUri(req) { return process.env.GOOGLE_REDIRECT_URI || `${req.protocol}://${req.get('host')}/auth/youtube/callback`; }
+function youtubeConfigured() { return Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET); }
+async function youtubeAccessToken() {
+  if (!youtubeTokens?.access_token) throw new Error('Conecta primero tu cuenta de YouTube.');
+  if (youtubeTokens.expiry_date && Date.now() > youtubeTokens.expiry_date - 60000) {
+    if (!youtubeTokens.refresh_token) throw new Error('La autorización de YouTube expiró. Vuelve a conectar tu cuenta.');
+    const body=new URLSearchParams({client_id:process.env.GOOGLE_CLIENT_ID,client_secret:process.env.GOOGLE_CLIENT_SECRET,refresh_token:youtubeTokens.refresh_token,grant_type:'refresh_token'});
+    const response=await fetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
+    const data=await response.json(); if(!response.ok)throw new Error(data.error_description||data.error||'No se pudo renovar la autorización de YouTube.');
+    youtubeTokens={...youtubeTokens,...data,refresh_token:youtubeTokens.refresh_token,expiry_date:Date.now()+(data.expires_in||3600)*1000};
+  }
+  return youtubeTokens.access_token;
+}
+async function youtubeApi(url) {
+  const token=await youtubeAccessToken();
+  const response=await fetch(url,{headers:{Authorization:`Bearer ${token}`}});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw new Error(data.error?.message||'La API oficial de YouTube devolvió un error.');
+  return data;
+}
+app.get('/auth/youtube',(req,res)=>{
+  if(!youtubeConfigured())return res.status(503).send('Falta configurar GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en Render.');
+  const state=crypto.randomBytes(24).toString('hex'); youtubeStates.set(state,Date.now()+10*60*1000);
+  const params=new URLSearchParams({client_id:process.env.GOOGLE_CLIENT_ID,redirect_uri:youtubeRedirectUri(req),response_type:'code',scope:'https://www.googleapis.com/auth/youtube.readonly',access_type:'offline',prompt:'consent',state});
+  res.redirect('https://accounts.google.com/o/oauth2/v2/auth?'+params.toString());
+});
+app.get('/auth/youtube/callback',async(req,res)=>{
+  const state=String(req.query.state||''),expires=youtubeStates.get(state); youtubeStates.delete(state);
+  if(!expires||expires<Date.now())return res.status(400).send('Autorización inválida o vencida. Regresa a YONDER STUDIO e inténtalo otra vez.');
+  if(req.query.error)return res.redirect('/?youtube=denied');
+  try{
+    const body=new URLSearchParams({code:String(req.query.code||''),client_id:process.env.GOOGLE_CLIENT_ID,client_secret:process.env.GOOGLE_CLIENT_SECRET,redirect_uri:youtubeRedirectUri(req),grant_type:'authorization_code'});
+    const response=await fetch('https://oauth2.googleapis.com/token',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body});
+    const data=await response.json(); if(!response.ok)throw new Error(data.error_description||data.error||'No se pudo completar OAuth.');
+    youtubeTokens={...data,expiry_date:Date.now()+(data.expires_in||3600)*1000};
+    const channel=await youtubeApi('https://www.googleapis.com/youtube/v3/channels?part=snippet,contentDetails&mine=true');
+    youtubeChannel=channel.items?.[0]||null;
+    res.redirect('/?youtube=connected');
+  }catch(e){console.error('YouTube OAuth:',e);res.redirect('/?youtube=error');}
+});
+app.get('/api/youtube/status',async(req,res)=>{
+  res.json({configured:youtubeConfigured(),connected:Boolean(youtubeTokens?.access_token),channel:youtubeChannel?{title:youtubeChannel.snippet?.title,thumbnail:youtubeChannel.snippet?.thumbnails?.default?.url}:null,redirectUri:youtubeRedirectUri(req)});
+});
+app.get('/api/youtube/videos',async(req,res)=>{
+  try{
+    if(!youtubeChannel) return res.status(401).json({error:'Conecta primero tu cuenta de YouTube.'});
+    const playlistId=youtubeChannel.contentDetails?.relatedPlaylists?.uploads;
+    if(!playlistId)return res.json({videos:[]});
+    const list=await youtubeApi('https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails&maxResults=25&playlistId='+encodeURIComponent(playlistId));
+    const videos=(list.items||[]).map(item=>({id:item.contentDetails?.videoId,title:item.snippet?.title||'Video',thumbnail:item.snippet?.thumbnails?.medium?.url||item.snippet?.thumbnails?.default?.url||null,publishedAt:item.snippet?.publishedAt||null,url:'https://www.youtube.com/watch?v='+encodeURIComponent(item.contentDetails?.videoId||'')})).filter(v=>v.id);
+    res.json({videos});
+  }catch(e){res.status(400).json({error:e.message});}
+});
 function execute(command, args) { return new Promise((resolve, reject) => { const child=spawn(command,args); let stdout='',stderr=''; child.stdout.on('data',d=>stdout+=d); child.stderr.on('data',d=>stderr+=d); child.on('error',reject); child.on('close',code=>code===0?resolve({stdout,stderr}):reject(new Error(stderr.slice(-1800)||`${command} terminó con código ${code}`))); }); }
 const SUPPORTED_VIDEO_DOMAINS = ['youtube.com','youtu.be','kick.com','twitch.tv','vimeo.com','dailymotion.com','dailymotion.co','tiktok.com','vm.tiktok.com','x.com','twitter.com','facebook.com','fb.watch','instagram.com','reddit.com','streamable.com','rumble.com'];
 function getPlatform(value) {
