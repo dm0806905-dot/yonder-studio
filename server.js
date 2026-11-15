@@ -26,7 +26,7 @@ const SUPPORTED_VIDEO_DOMAINS = ['youtube.com','youtu.be','kick.com','twitch.tv'
 function getPlatform(value) {
   try {
     const u = new URL(value);
-    const host = u.hostname.toLowerCase().replace(/^www\\./,'');
+    const host = u.hostname.toLowerCase().replace(/^www\./,'');
     const domain = SUPPORTED_VIDEO_DOMAINS.find(d => host === d || host.endsWith('.' + d));
     if (!domain) return null;
     if (domain === 'youtube.com' || domain === 'youtu.be') return 'YouTube';
