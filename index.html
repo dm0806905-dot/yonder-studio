@@ -62,13 +62,21 @@ button,input,select{font:inherit}button{cursor:pointer;border:0;color:white}.app
  <section class="page" id="page-analytics"><div class="section-head"><h2>Analíticas</h2></div><div class="stats"><div class="stat"><b id="analyticsClips">0</b><span>Clips generados</span></div><div class="stat"><b id="analyticsJobs">0</b><span>Procesamientos</span></div><div class="stat"><b>—</b><span>Visualizaciones (conecta tus redes)</span></div></div><div class="panel" style="margin-top:15px"><p class="muted">Las estadísticas de visualizaciones y rendimiento se mostrarán al conectar las cuentas mediante sus APIs oficiales.</p></div></section>
  <section class="page" id="page-settings">
   <div class="section-head"><h2>Mi configuración de clips</h2></div>
+  <div class="panel" id="youtubeConnection">
+   <h2>Conexión oficial con YouTube</h2>
+   <p class="muted">Autoriza tu cuenta de Google para consultar tu canal y tus videos subidos. Esta conexión oficial no descarga el MP4: para editar un video, selecciona su archivo original desde tu Android.</p>
+   <p id="youtubeStatus" class="status">Comprobando configuración de YouTube...</p>
+   <div style="display:flex;gap:9px;flex-wrap:wrap"><a href="/auth/youtube"><button class="primary" id="youtubeConnect">Conectar con Google / YouTube</button></a><button class="secondary" id="youtubeList">Ver mis videos</button></div>
+   <div id="youtubeVideos" class="small" style="margin-top:12px"></div>
+   <p class="small">Configura GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET y GOOGLE_REDIRECT_URI en Render. Nunca introduzcas tu contraseña de Google en YONDER STUDIO.</p>
+  </div>
   <div class="panel"><h2>Plantilla del clip</h2><div class="formgrid">
    <div class="field"><label>Formato de video</label><select id="aspect"><option value="9:16">Vertical 9:16 (TikTok / Shorts)</option><option value="16:9">Horizontal 16:9</option><option value="1:1">Cuadrado 1:1</option></select></div>
    <div class="field"><label>Duración de cada clip</label><select id="duration"><option value="30">30 segundos</option><option value="45" selected>45 segundos</option><option value="60">60 segundos</option><option value="90">90 segundos</option><option value="120">120 segundos</option></select></div>
    <div class="field"><label>Cantidad de clips</label><select id="count"><option>2</option><option selected>3</option><option>5</option><option>8</option><option>10</option></select></div>
    <div class="field"><label>Calidad de exportación</label><select id="quality"><option value="720">HD 720p</option><option value="1080" selected>Full HD 1080p</option></select></div>
    <div class="field full"><label>Nombre de proyecto (opcional)</label><input id="projectName" placeholder="Ej. Mejores momentos del directo"></div>
-  </div><p class="small">La IA transcribe el audio y evalúa bromas, risas, reacciones, sorpresas y momentos memorables. Para activarla, configura OPENAI_API_KEY en Render. La clave nunca se coloca en esta página.</p></div>
+  </div><p class="small">La IA transcribe el audio con Groq y evalúa bromas, risas, reacciones, sorpresas y momentos memorables. Configura GROQ_API_KEY en Render. La clave nunca se coloca en esta página.</p></div>
   <div class="panel"><h2>Estado de inteligencia artificial</h2><p class="muted" id="aiStatus">Comprobando conexión...</p></div><div class="panel"><h2>Subir video desde tu dispositivo</h2><div class="drop">Selecciona un archivo de video para procesarlo directamente.<br><input id="videoFile" type="file" accept="video/*"></div></div>
  </section>
 </main>
@@ -107,7 +115,27 @@ $('#videoFileHome').onchange=e=>{let f=e.target.files[0];if(f)runJob({file:f})};
 async function downloadClip(id){try{let d=await request('/api/clips/'+id+'/download');let a=document.createElement('a');a.href=api(d.url);a.download=d.filename||'yonder-clip.mp4';document.body.append(a);a.click();a.remove()}catch(e){toast(e.message)}}
 function previewClip(id){let c=clips.find(x=>x.id===id);if(c?.url)window.open(api(c.url),'_blank');else toast('Vista previa no disponible.')}
 $('#refreshVideos').onclick=loadClips;
-async function health(){try{let d=await request('/api/health');$('#aiStatus').textContent=d.aiEnabled?'✦ IA conectada y lista para analizar tus videos.':'IA desactivada: falta configurar OPENAI_API_KEY en Render.'}catch(e){$('#aiStatus').textContent='No se pudo conectar con el servidor.';console.warn(e)}}
+async function loadYouTubeStatus(){
+ const el=$('#youtubeStatus'); if(!el)return;
+ try{const d=await request('/api/youtube/status');
+  if(!d.configured){el.textContent='Falta configurar las credenciales OAuth de Google en Render.';$('#youtubeConnect').disabled=true;$('#youtubeConnect').textContent='Conexión pendiente de configurar';}
+  else if(d.connected){el.textContent='✓ Conectado'+(d.channel?.title?' a '+d.channel.title:'')+'. Puedes consultar tus videos.';$('#youtubeConnect').textContent='Volver a autorizar cuenta';$('#youtubeConnect').disabled=false;}
+  else{el.textContent='Aún no has conectado tu cuenta de YouTube.';$('#youtubeConnect').disabled=false;}
+ }catch(e){el.textContent=e.message;}
+}
+async function listYouTubeVideos(){
+ const box=$('#youtubeVideos');box.textContent='Cargando videos de tu canal...';
+ try{const d=await request('/api/youtube/videos');
+  if(!d.videos?.length){box.textContent='No se encontraron videos subidos en este canal.';return;}
+  box.innerHTML='<b>Videos de tu canal (selecciona el MP4 original en tu teléfono para crear clips):</b><ul style="padding-left:20px">'+d.videos.map(v=>'<li style="margin:7px 0"><a style="color:#d6aaff" target="_blank" rel="noreferrer" href="'+esc(v.url)+'">'+esc(v.title)+'</a></li>').join('')+'</ul>';
+ }catch(e){box.textContent=e.message;}
+}
+$('#youtubeList').onclick=listYouTubeVideos;
+loadYouTubeStatus();
+if(new URLSearchParams(location.search).get('youtube')==='connected'){toast('Cuenta de YouTube conectada.');go('settings');history.replaceState({},'',location.pathname);}
+if(new URLSearchParams(location.search).get('youtube')==='denied')toast('No se concedió el permiso de YouTube.');
+if(new URLSearchParams(location.search).get('youtube')==='error')toast('No se pudo conectar YouTube. Revisa las credenciales OAuth de Render.');
+async function health(){try{let d=await request('/api/health');$('#aiStatus').textContent=d.aiEnabled?'✦ IA conectada y lista para analizar tus videos.':'IA desactivada: falta configurar GROQ_API_KEY en Render.'}catch(e){$('#aiStatus').textContent='No se pudo conectar con el servidor.';console.warn(e)}}
 loadClips();health();
 </script>
 </body></html>
