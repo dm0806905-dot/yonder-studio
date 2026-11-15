@@ -32,8 +32,8 @@ button,input,select{font:inherit}button{cursor:pointer;border:0;color:white}.app
  <header class="topbar"><div class="top-left"><button class="menu-btn" id="menuBtn">☰</button><span class="crumb" id="breadcrumb">Dashboard</span></div><span class="pill">✦ YONDER STUDIO</span></header>
  <section class="page active" id="page-dashboard">
   <div class="hero"><div class="eyebrow">CREA · RECORTA · PUBLICA</div><h1>Convierte videos en clips<br>virales en segundos</h1><p>La IA escucha el video, detecta bromas, risas y reacciones, y selecciona los momentos con mayor potencial viral.</p>
-   <div class="urlbox"><input id="sourceUrl" placeholder="Pega aquí el enlace de YouTube o Kick..." type="url"><button class="primary" id="urlGenerate">✦ Crear clips</button></div>
-   <div class="small">✦ IA REAL · YouTube · Kick · MP4 · MOV · WEBM</div>
+   <div class="urlbox"><input id="sourceUrl" placeholder="Pega un enlace de YouTube, Kick, Twitch, Vimeo, TikTok y más..." type="url"><button class="primary" id="urlGenerate">✦ Crear clips</button></div>
+   <div class="small">✦ IA REAL · YouTube · Kick · Twitch · Vimeo · TikTok · X · Facebook · Reddit · MP4</div>
   </div>
   <div class="panel" id="jobPanel" style="display:none;margin-top:15px">
    <h2 id="jobTitle">Preparando tu video</h2>
@@ -51,7 +51,7 @@ button,input,select{font:inherit}button{cursor:pointer;border:0;color:white}.app
  </section>
  <section class="page" id="page-live">
   <div class="section-head"><h2>Clips de un Live, en vivo</h2></div>
-  <div class="panel"><h2>Importar una transmisión</h2><p class="muted">Pega el enlace público de una transmisión o VOD de Kick o YouTube.</p><div class="urlbox"><input id="liveUrl" placeholder="https://kick.com/... o enlace de YouTube"><button class="primary" id="liveGenerate">Importar</button></div><p class="small">La disponibilidad depende de que la transmisión/VOD sea pública y accesible para yt-dlp.</p></div>
+  <div class="panel"><h2>Importar una transmisión</h2><p class="muted">Pega el enlace público de una transmisión o VOD compatible. La disponibilidad depende del acceso permitido por la plataforma.</p><div class="urlbox"><input id="liveUrl" placeholder="Pega aquí el enlace de tu Live o VOD"><button class="primary" id="liveGenerate">Importar</button></div><p class="small">La disponibilidad depende de que la transmisión/VOD sea pública y accesible para yt-dlp.</p></div>
   <div class="panel"><h2>Tus Lives</h2><div class="empty">Tus transmisiones importadas aparecerán aquí.</div></div>
  </section>
  <section class="page" id="page-projects"><div class="section-head"><h2>Proyectos</h2></div><div class="panel"><p class="muted">Los trabajos que proceses aparecerán en esta sección.</p><div id="projectsList" class="empty">No hay proyectos todavía.</div></div></section>
