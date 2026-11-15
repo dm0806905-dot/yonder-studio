@@ -35,6 +35,11 @@ button,input,select{font:inherit}button{cursor:pointer;border:0;color:white}.app
    <div class="urlbox"><input id="sourceUrl" placeholder="Pega aquí el enlace de YouTube o Kick..." type="url"><button class="primary" id="urlGenerate">✦ Crear clips</button></div>
    <div class="small">✦ IA REAL · YouTube · Kick · MP4 · MOV · WEBM</div>
   </div>
+  <div class="panel" id="jobPanel" style="display:none;margin-top:15px">
+   <h2 id="jobTitle">Preparando tu video</h2>
+   <div class="progress"><i id="jobProgress"></i></div>
+   <p class="status" id="jobStatus" role="status" aria-live="polite">Conectando con el servidor...</p>
+  </div>
   <div class="stats"><div class="stat"><b id="statClips">0</b><span>Clips creados</span></div><div class="stat"><b id="statVideos">0</b><span>Videos procesados</span></div><div class="stat"><b>9:16</b><span>Formato vertical</span></div></div>
   <div class="section-head"><h2>Clips recientes <span class="pill">IA</span></h2><button class="secondary" data-page="videos">Ver todos</button></div>
   <div class="grid" id="recentGrid"><div class="empty" style="grid-column:1/-1">Todavía no tienes clips. Pega un enlace o sube un video para comenzar.</div></div>
@@ -79,7 +84,7 @@ function renderClips(){let html=clips.map(c=>`<article class="card clip"><div cl
 $('#recentGrid').innerHTML=html;$('#allGrid').innerHTML=html;$('#statClips').textContent=clips.length;$('#statVideos').textContent=jobs.length;$('#analyticsClips').textContent=clips.length;$('#analyticsJobs').textContent=jobs.length}
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function loadClips(){try{let d=await request('/api/clips');clips=d.clips||[];jobs=d.jobs||[];renderClips()}catch(e){console.warn(e)}}
-function showJob(title){$('#jobPanel').style.display='block';$('#jobTitle').textContent=title;$('#jobProgress').style.width='5%';$('#jobStatus').textContent='Conectando con el servidor...'}
+function showJob(title){const panel=$('#jobPanel'),heading=$('#jobTitle'),progress=$('#jobProgress'),status=$('#jobStatus');if(!panel||!heading||!progress||!status){toast('Falta el panel de progreso. Recarga la página e inténtalo de nuevo.');throw new Error('No se encontró el panel de progreso en la página.');}panel.style.display='block';heading.textContent=title;progress.style.width='5%';status.textContent='Conectando con el servidor...';}
 async function runJob({url,file}){showJob('Preparando tu video');try{
  let body;if(file){body=new FormData();body.append('video',file);Object.entries(settings()).forEach(([k,v])=>body.append(k,v))}
  else {body=JSON.stringify({...settings(),url});}
