@@ -40,6 +40,11 @@ button,input,select{font:inherit}button{cursor:pointer;border:0;color:white}.app
    <div class="progress"><i id="jobProgress"></i></div>
    <p class="status" id="jobStatus" role="status" aria-live="polite">Conectando con el servidor...</p>
   </div>
+  <div class="panel" style="margin-top:15px">
+   <h2>O sube un video desde tu Android</h2>
+   <p class="muted">Si YouTube bloquea el enlace, selecciona aquí un MP4 guardado en tu teléfono y la IA buscará los mejores momentos.</p>
+   <div class="drop"><label for="videoFileHome" style="display:block;font-weight:700">📁 Seleccionar video MP4 / MOV</label><input id="videoFileHome" type="file" accept="video/mp4,video/quicktime,video/webm,video/*" style="display:block;margin:12px auto 0;max-width:100%"><p class="small">Después de elegirlo, comenzará el análisis automáticamente.</p></div>
+  </div>
   <div class="stats"><div class="stat"><b id="statClips">0</b><span>Clips creados</span></div><div class="stat"><b id="statVideos">0</b><span>Videos procesados</span></div><div class="stat"><b>9:16</b><span>Formato vertical</span></div></div>
   <div class="section-head"><h2>Clips recientes <span class="pill">IA</span></h2><button class="secondary" data-page="videos">Ver todos</button></div>
   <div class="grid" id="recentGrid"><div class="empty" style="grid-column:1/-1">Todavía no tienes clips. Pega un enlace o sube un video para comenzar.</div></div>
@@ -98,6 +103,7 @@ async function runJob({url,file}){showJob('Preparando tu video');try{
 $('#urlGenerate').onclick=()=>{let u=$('#sourceUrl').value.trim();if(!u)return toast('Pega primero un enlace de YouTube o Kick.');runJob({url:u})};
 $('#liveGenerate').onclick=()=>{let u=$('#liveUrl').value.trim();if(!u)return toast('Pega el enlace del Live o VOD.');runJob({url:u})};
 $('#videoFile').onchange=e=>{let f=e.target.files[0];if(f)runJob({file:f})};
+$('#videoFileHome').onchange=e=>{let f=e.target.files[0];if(f)runJob({file:f})};
 async function downloadClip(id){try{let d=await request('/api/clips/'+id+'/download');let a=document.createElement('a');a.href=api(d.url);a.download=d.filename||'yonder-clip.mp4';document.body.append(a);a.click();a.remove()}catch(e){toast(e.message)}}
 function previewClip(id){let c=clips.find(x=>x.id===id);if(c?.url)window.open(api(c.url),'_blank');else toast('Vista previa no disponible.')}
 $('#refreshVideos').onclick=loadClips;
