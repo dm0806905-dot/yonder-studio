@@ -1,0 +1,9 @@
+YONDER STUDIO — DESPLIEGUE PARA ANDROID
+
+1. Sube la carpeta completa a un repositorio GitHub.
+2. En Render crea un Blueprint y selecciona ese repositorio; Render leerá render.yaml y Dockerfile.
+3. En Environment añade OPENAI_API_KEY con tu clave secreta de la API de OpenAI. No la pongas en index.html ni la compartas. La API puede tener costos según uso.
+4. Espera a que el servicio termine el despliegue. Abre la URL https://TU-SERVICIO.onrender.com desde Chrome en Android.
+5. La página muestra si la IA está conectada. Pega un enlace público compatible o sube un MP4 desde el celular y pulsa Crear clips.
+
+IMPORTANTE: La descarga de enlaces depende de que YouTube/Kick permitan el acceso; algunos videos requieren sesión o están restringidos. En ese caso, descarga el video por medios autorizados y súbelo desde el teléfono. Usa solo contenido propio o con permiso. Los archivos guardados en el disco efímero de Render pueden perderse al reiniciar o redeplegar; para conservarlos se necesita almacenamiento persistente. La IA analiza transcripción y contexto; no puede garantizar viralidad ni detectar visualmente todo lo que ocurre.

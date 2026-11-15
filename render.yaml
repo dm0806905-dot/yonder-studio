@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: yonder-studio
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_TRANSCRIBE_MODEL
+        value: gpt-4o-mini-transcribe
+      - key: OPENAI_CHAT_MODEL
+        value: gpt-4.1-mini
